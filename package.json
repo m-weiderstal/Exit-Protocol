@@ -1,0 +1,15 @@
+{
+  "name": "exit-ticket",
+  "version": "1.0.0",
+  "description": "Classroom exit ticket word cloud",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.19.0",
+    "socket.io": "^4.7.2",
+    "xlsx": "^0.18.5"
+  }
+}

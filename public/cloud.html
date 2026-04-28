@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Cloud — Teacher View</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 28px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    h1 { font-size: 1.2rem; font-weight: 600; }
+
+    .badge {
+      background: rgba(102, 126, 234, 0.3);
+      border: 1px solid rgba(102, 126, 234, 0.5);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.85rem;
+      color: #a9bff7;
+    }
+
+    .controls { display: flex; gap: 10px; align-items: center; }
+
+    .btn {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover { background: rgba(255,255,255,0.15); }
+
+    .btn-danger {
+      border-color: rgba(252, 129, 129, 0.4);
+      color: #fc8181;
+      background: rgba(252, 129, 129, 0.08);
+    }
+
+    .btn-danger:hover { background: rgba(252, 129, 129, 0.2); }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #68d391;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .canvas-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    canvas { max-width: 100%; max-height: 100%; }
+
+    .empty {
+      text-align: center;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .empty .icon { font-size: 4rem; margin-bottom: 16px; }
+    .empty h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 8px; }
+    .empty p { font-size: 0.85rem; }
+
+    #canvas { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <div class="dot" title="Live"></div>
+      <h1>Exit Ticket — Word Cloud</h1>
+      <span class="badge" id="count-badge">0 responses</span>
+    </div>
+    <div class="controls">
+      <button class="btn" onclick="location.href='/'">Student page</button>
+      <button class="btn btn-danger" onclick="resetCloud()">Reset</button>
+    </div>
+  </header>
+
+  <div class="canvas-wrap" id="canvas-wrap">
+    <div class="empty" id="empty-state">
+      <div class="icon">☁️</div>
+      <h2>Waiting for responses...</h2>
+      <p>Share <strong>this device's IP address</strong> on port 3000 with your students.</p>
+    </div>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+  <script>
+    const COLORS = [
+      '#667eea', '#764ba2', '#63b3ed', '#68d391', '#f6ad55',
+      '#fc8181', '#b794f4', '#76e4f7', '#fbd38d', '#9ae6b4',
+    ];
+
+    const socket = io();
+    let wordData = {};
+    let subCount = 0;
+    let drawTimeout = null;
+
+    function updateBadge() {
+      const el = document.getElementById('count-badge');
+      el.textContent = `${subCount} response${subCount !== 1 ? 's' : ''}`;
+    }
+
+    function drawCloud() {
+      const entries = Object.entries(wordData);
+      if (entries.length === 0) {
+        document.getElementById('canvas').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('empty-state').style.display = 'none';
+      const canvas = document.getElementById('canvas');
+      canvas.style.display = 'block';
+
+      const wrap = document.getElementById('canvas-wrap');
+      const w = wrap.clientWidth - 40;
+      const h = wrap.clientHeight - 40;
+      canvas.width = w;
+      canvas.height = h;
+
+      const maxCount = Math.max(...entries.map(([, v]) => v));
+
+      const list = entries
+        .sort(([, a], [, b]) => b - a)
+        .map(([word, count], i) => [
+          word,
+          Math.round(12 + (count / maxCount) * (Math.min(w, h) * 0.12)),
+          COLORS[i % COLORS.length],
+        ]);
+
+      WordCloud(canvas, {
+        list,
+        gridSize: Math.round(8 * w / 1024),
+        weightFactor: 1,
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
+        color: (word, weight, fontSize, distance, theta) => {
+          const idx = list.findIndex(([w]) => w === word);
+          return COLORS[idx % COLORS.length];
+        },
+        rotateRatio: 0.3,
+        rotationSteps: 2,
+        backgroundColor: 'transparent',
+        drawOutOfBound: false,
+        shrinkToFit: true,
+      });
+    }
+
+    function scheduleDraw() {
+      clearTimeout(drawTimeout);
+      drawTimeout = setTimeout(drawCloud, 300);
+    }
+
+    socket.on('update', ({ wordCounts, submissionCount }) => {
+      wordData = wordCounts;
+      subCount = submissionCount;
+      updateBadge();
+      scheduleDraw();
+    });
+
+    async function resetCloud() {
+      if (!confirm('Reset all responses? This cannot be undone.')) return;
+      await fetch('/reset', { method: 'POST' });
+    }
+
+    async function init() {
+      const res = await fetch('/words');
+      const data = await res.json();
+      wordData = data.wordCounts;
+      subCount = data.submissionCount;
+      updateBadge();
+      drawCloud();
+    }
+
+    window.addEventListener('resize', scheduleDraw);
+    init();
+  </script>
+</body>
+</html>

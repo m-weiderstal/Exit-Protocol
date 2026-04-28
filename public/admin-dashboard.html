@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exit Protocol — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+      font-family: 'Courier New', Courier, monospace;
+      color: #00ff41;
+      overflow: hidden;
+    }
+
+    #rain {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    header, main { position: relative; z-index: 1; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: rgba(0, 0, 0, 0.92);
+      border-bottom: 1px solid rgba(0, 255, 65, 0.3);
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #00ff41;
+      box-shadow: 0 0 6px #00ff41;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    h1 {
+      font-size: 0.95rem;
+      color: #00ff41;
+      text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);
+      letter-spacing: 0.05em;
+    }
+
+    .badge {
+      background: rgba(0, 255, 65, 0.08);
+      border: 1px solid rgba(0, 255, 65, 0.35);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      color: #00cc33;
+    }
+
+    .header-right { display: flex; gap: 8px; }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 65, 0.35);
+      background: transparent;
+      color: rgba(0, 255, 65, 0.65);
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      border-color: #00ff41;
+      color: #00ff41;
+      box-shadow: 0 0 8px rgba(0, 255, 65, 0.25);
+    }
+
+    .btn-danger {
+      border-color: rgba(255, 65, 65, 0.35);
+      color: rgba(255, 65, 65, 0.7);
+    }
+
+    .btn-danger:hover {
+      border-color: #ff4141;
+      color: #ff4141;
+      box-shadow: 0 0 8px rgba(255, 65, 65, 0.25);
+    }
+
+    main { flex: 1; display: flex; overflow: hidden; }
+
+    /* ── Left panel ── */
+    .panel {
+      width: 260px;
+      flex-shrink: 0;
+      border-right: 1px solid rgba(0, 255, 65, 0.2);
+      background: rgba(0, 5, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-top {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .section-label {
+      font-size: 0.68rem;
+      color: rgba(0, 255, 65, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .export-buttons { display: flex; flex-direction: column; gap: 6px; }
+
+    .btn-export {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 65, 0.2);
+      background: rgba(0, 255, 65, 0.04);
+      color: rgba(0, 255, 65, 0.65);
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: block;
+    }
+
+    .btn-export:hover {
+      border-color: rgba(0, 255, 65, 0.6);
+      color: #00ff41;
+      background: rgba(0, 255, 65, 0.08);
+    }
+
+    .btn-reset-full {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 65, 65, 0.3);
+      background: rgba(255, 65, 65, 0.04);
+      color: rgba(255, 65, 65, 0.7);
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+
+    .btn-reset-full:hover {
+      border-color: #ff4141;
+      color: #ff4141;
+      background: rgba(255, 65, 65, 0.1);
+    }
+
+    /* ── Saved sessions list ── */
+    .sessions-section {
+      flex: 1;
+      overflow-y: auto;
+      border-top: 1px solid rgba(0, 255, 65, 0.15);
+      padding: 16px 20px;
+    }
+
+    .sessions-section::-webkit-scrollbar { width: 3px; }
+    .sessions-section::-webkit-scrollbar-thumb { background: rgba(0, 255, 65, 0.3); }
+
+    .session-item {
+      display: block;
+      padding: 9px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 65, 0.15);
+      background: rgba(0, 255, 65, 0.03);
+      text-decoration: none;
+      color: #00ff41;
+      margin-bottom: 6px;
+      transition: all 0.2s;
+    }
+
+    .session-item:hover {
+      border-color: rgba(0, 255, 65, 0.5);
+      background: rgba(0, 255, 65, 0.07);
+    }
+
+    .session-date { font-size: 0.78rem; font-weight: bold; margin-bottom: 2px; }
+    .session-meta { font-size: 0.7rem; color: rgba(0, 255, 65, 0.45); }
+
+    .no-sessions {
+      color: rgba(0, 255, 65, 0.25);
+      font-size: 0.78rem;
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    /* ── Word cloud area ── */
+    .cloud-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    canvas { display: none; max-width: 100%; max-height: 100%; }
+
+    .empty {
+      text-align: center;
+      color: rgba(0, 255, 65, 0.2);
+    }
+
+    .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty p { font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+
+<header>
+  <div class="header-left">
+    <div class="dot"></div>
+    <h1>Exit Protocol — Admin</h1>
+    <span class="badge" id="count-badge">0 svar</span>
+  </div>
+  <div class="header-right">
+    <a class="btn" href="/">Elevsidan</a>
+    <button class="btn btn-danger" onclick="logout()">Logga ut</button>
+  </div>
+</header>
+
+<main>
+  <aside class="panel">
+    <div class="panel-top">
+      <div>
+        <p class="section-label">// Exportera pågående lektion</p>
+        <div class="export-buttons">
+          <a class="btn-export" href="/export/csv" download>» CSV</a>
+          <a class="btn-export" href="/export/txt" download>» TXT</a>
+          <a class="btn-export" href="/export/excel" download>» Excel</a>
+        </div>
+      </div>
+      <div>
+        <p class="section-label">// Ordmoln</p>
+        <button class="btn-export" id="download-btn" onclick="downloadCloud()" style="opacity:0.35;cursor:default;">» Ladda ner som bild</button>
+      </div>
+      <div>
+        <p class="section-label">// Hantera</p>
+        <button class="btn-reset-full" onclick="resetCloud()">» Återställ alla svar</button>
+      </div>
+    </div>
+
+    <div class="sessions-section">
+      <p class="section-label">// Sparade lektioner</p>
+      <div id="sessions-list">
+        <p class="no-sessions">Inga sparade lektioner ännu.</p>
+      </div>
+    </div>
+  </aside>
+
+  <div class="cloud-area">
+    <div class="empty" id="empty-state">
+      <div class="icon">::</div>
+      <p>Väntar på elevsvar...</p>
+    </div>
+    <canvas id="cloud-canvas"></canvas>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+<script>
+  // ── Matrix rain ──
+  (function () {
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+    const CHARS = 'アカサタナハマヤラワイキシチニヒミリウクスツヌフムユルンエケセテネヘメオコソトノホモヨロ01001101';
+    const SIZE = 13;
+    let drops = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drops = Array.from({ length: Math.floor(canvas.width / SIZE) }, () => Math.random() * -80);
+    }
+
+    function draw() {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = SIZE + 'px monospace';
+      for (let i = 0; i < drops.length; i++) {
+        ctx.fillStyle = i % 5 === 0 ? '#ffffff' : '#00ff41';
+        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], i * SIZE, drops[i] * SIZE);
+        if (drops[i] * SIZE > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    setInterval(draw, 40);
+  })();
+
+  // ── Word cloud ──
+  const COLORS = [
+    '#00ff41', '#00e639', '#39ff73', '#00cc33',
+    '#66ff99', '#00b32d', '#80ffb3', '#33ff66',
+    '#00ff80', '#4dff88',
+  ];
+
+  const socket = io();
+  let wordData = {};
+  let subCount = 0;
+  let drawTimeout = null;
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleString('sv-SE', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  function updateBadge() {
+    document.getElementById('count-badge').textContent = `${subCount} svar`;
+  }
+
+  function renderSessions(sessions) {
+    const list = document.getElementById('sessions-list');
+    if (sessions.length === 0) {
+      list.innerHTML = '<p class="no-sessions">Inga sparade lektioner ännu.</p>';
+      return;
+    }
+    list.innerHTML = [...sessions].reverse().map(s => `
+      <a class="session-item" href="/admin/session?id=${s.id}">
+        <div class="session-date">> ${formatDate(s.sparadDatum)}</div>
+        <div class="session-meta">${s.antalSvar} svar</div>
+      </a>
+    `).join('');
+  }
+
+  async function loadSessions() {
+    const res = await fetch('/admin/sessions');
+    if (res.ok) renderSessions(await res.json());
+  }
+
+  function drawCloud() {
+    const entries = Object.entries(wordData);
+    const canvas = document.getElementById('cloud-canvas');
+    const empty = document.getElementById('empty-state');
+
+    if (entries.length === 0) {
+      canvas.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    canvas.style.display = 'block';
+
+    const btn = document.getElementById('download-btn');
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+
+    const area = document.querySelector('.cloud-area');
+    const w = area.clientWidth - 32;
+    const h = area.clientHeight - 32;
+    canvas.width = w;
+    canvas.height = h;
+
+    const maxCount = Math.max(...entries.map(([, v]) => v));
+    const list = entries
+      .sort(([, a], [, b]) => b - a)
+      .map(([word, count], i) => [
+        word,
+        Math.round(12 + (count / maxCount) * (Math.min(w, h) * 0.05)),
+        COLORS[i % COLORS.length],
+      ]);
+
+    WordCloud(canvas, {
+      list,
+      gridSize: Math.round(8 * w / 1024),
+      weightFactor: 1,
+      fontFamily: "'Courier New', Courier, monospace",
+      color: (word) => {
+        const idx = list.findIndex(([w]) => w === word);
+        return COLORS[idx % COLORS.length];
+      },
+      rotateRatio: 0.3,
+      rotationSteps: 2,
+      backgroundColor: 'transparent',
+      shrinkToFit: true,
+    });
+  }
+
+  function scheduleDraw() {
+    clearTimeout(drawTimeout);
+    drawTimeout = setTimeout(drawCloud, 300);
+  }
+
+  socket.on('update', ({ wordCounts, submissionCount }) => {
+    wordData = wordCounts;
+    subCount = submissionCount;
+    updateBadge();
+    scheduleDraw();
+  });
+
+  socket.on('session-saved', () => loadSessions());
+
+  async function resetCloud() {
+    if (!confirm('Återställa alla svar? Den nuvarande lektionen sparas automatiskt.')) return;
+    const res = await fetch('/reset', { method: 'POST' });
+    if (res.status === 401) {
+      alert('Session har gått ut. Logga in igen.');
+      window.location.href = '/admin';
+    }
+  }
+
+  async function logout() {
+    await fetch('/admin/logout', { method: 'POST' });
+    window.location.href = '/';
+  }
+
+  function downloadCloud() {
+    const src = document.getElementById('cloud-canvas');
+    if (!src.width) return;
+    const tmp = document.createElement('canvas');
+    tmp.width = src.width;
+    tmp.height = src.height;
+    const ctx = tmp.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, tmp.width, tmp.height);
+    ctx.drawImage(src, 0, 0);
+    const a = document.createElement('a');
+    a.download = `ordmoln-${new Date().toISOString().slice(0,16).replace('T','_')}.png`;
+    a.href = tmp.toDataURL('image/png');
+    a.click();
+  }
+
+  async function init() {
+    const res = await fetch('/words');
+    const data = await res.json();
+    wordData = data.wordCounts;
+    subCount = data.submissionCount;
+    updateBadge();
+    drawCloud();
+    loadSessions();
+  }
+
+  window.addEventListener('resize', scheduleDraw);
+  init();
+</script>
+</body>
+</html>

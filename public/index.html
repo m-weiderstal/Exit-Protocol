@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exit Protocol</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #000;
+      --fg: #00ff41;
+      --fg-dim: rgba(0,255,65,0.55);
+      --fg-muted: rgba(0,255,65,0.2);
+      --border: rgba(0,255,65,0.2);
+      --border-strong: rgba(0,255,65,0.35);
+      --panel-bg: rgba(0,5,0,0.88);
+      --header-bg: rgba(0,0,0,0.9);
+      --input-bg: rgba(0,20,0,0.6);
+      --dot-color: #00ff41;
+      --dot-glow: #00ff41;
+      --glow: rgba(0,255,65,0.4);
+      --glow-sm: rgba(0,255,65,0.2);
+      --badge-bg: rgba(0,255,65,0.08);
+      --error: #ff4141;
+      --font: 'Courier New', Courier, monospace;
+    }
+
+    body.light-theme {
+      --bg: #f0f2f5;
+      --fg: #1a1a2e;
+      --fg-dim: rgba(26,26,46,0.6);
+      --fg-muted: rgba(26,26,46,0.25);
+      --border: rgba(26,26,46,0.15);
+      --border-strong: rgba(26,26,46,0.25);
+      --panel-bg: rgba(255,255,255,0.92);
+      --header-bg: rgba(240,242,245,0.97);
+      --input-bg: rgba(255,255,255,0.85);
+      --dot-color: #4a90d9;
+      --dot-glow: #4a90d9;
+      --glow: rgba(74,144,217,0.3);
+      --glow-sm: rgba(74,144,217,0.15);
+      --badge-bg: rgba(74,144,217,0.1);
+      --error: #cc2200;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--fg);
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    #rain {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      opacity: 0.18;
+      pointer-events: none;
+      transition: opacity 0.4s;
+    }
+
+    body.light-theme #rain { opacity: 0; }
+
+    header, main { position: relative; z-index: 1; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border-strong);
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--dot-color);
+      box-shadow: 0 0 6px var(--dot-glow);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    h1 {
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--fg);
+      text-shadow: 0 0 8px var(--glow-sm);
+      letter-spacing: 0.05em;
+    }
+
+    .badge {
+      background: var(--badge-bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      color: var(--fg-dim);
+    }
+
+    .btn-theme {
+      padding: 5px 11px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--fg-dim);
+      font-size: 0.75rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-theme:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+      box-shadow: 0 0 8px var(--glow-sm);
+    }
+
+    .btn-theme.active {
+      background: var(--badge-bg);
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    .btn-admin {
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: transparent;
+      color: var(--fg-dim);
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-admin:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+      box-shadow: 0 0 8px var(--glow-sm);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── Left panel ── */
+    .panel {
+      width: 300px;
+      flex-shrink: 0;
+      padding: 28px 24px;
+      border-right: 1px solid var(--border);
+      background: var(--panel-bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 18px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .panel .icon { font-size: 1.8rem; }
+
+    .panel h2 {
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--fg);
+      text-shadow: 0 0 6px var(--glow-sm);
+    }
+
+    .panel p {
+      color: var(--fg-dim);
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border-strong);
+      background: var(--input-bg);
+      color: var(--fg);
+      font-size: 0.88rem;
+      font-family: inherit;
+      resize: none;
+      height: 100px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.3s;
+    }
+
+    textarea::placeholder { color: var(--fg-muted); }
+
+    textarea:focus {
+      border-color: var(--fg);
+      box-shadow: 0 0 10px var(--glow-sm);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid var(--fg);
+      background: var(--badge-bg);
+      color: var(--fg);
+      font-size: 0.9rem;
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: var(--glow-sm);
+      box-shadow: 0 0 12px var(--glow);
+    }
+
+    .btn-submit:disabled { opacity: 0.35; cursor: default; }
+
+    .error {
+      color: var(--error);
+      font-size: 0.78rem;
+      display: none;
+    }
+
+    .thanks {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+    }
+
+    .thanks .check { font-size: 2.5rem; }
+
+    .thanks h2 {
+      color: var(--fg);
+      text-shadow: 0 0 10px var(--glow);
+      font-size: 1.2rem;
+    }
+
+    .thanks p { color: var(--fg-dim); font-size: 0.82rem; }
+
+    /* ── Word cloud area ── */
+    .cloud-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    canvas { display: none; max-width: 100%; max-height: 100%; }
+
+    .empty {
+      text-align: center;
+      color: var(--fg-muted);
+    }
+
+    .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty p { font-size: 0.85rem; font-family: inherit; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { overflow: auto; }
+      main { flex-direction: column; }
+      .panel { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .cloud-area { min-height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+
+<header>
+  <div class="header-left">
+    <div class="dot"></div>
+    <h1>Exit Protocol</h1>
+    <span class="badge" id="count-badge">0 svar</span>
+  </div>
+  <div class="header-right">
+    <button class="btn-theme active" id="btn-matrix" onclick="setTheme('matrix')">Matrix</button>
+    <button class="btn-theme" id="btn-light" onclick="setTheme('light')">Ljust</button>
+    <a class="btn-admin" href="/admin">Admin</a>
+  </div>
+</header>
+
+<main>
+  <aside class="panel">
+    <div id="form-view">
+      <div class="icon">></div>
+      <h2>Vad lärde du dig idag?</h2>
+      <p>Skriv en mening om det viktigaste du tog med dig från lektionen.</p>
+      <textarea id="sentence" placeholder="t.ex. CPU:n bearbetar alla instruktioner..." maxlength="500"></textarea>
+      <p class="error" id="error-msg"></p>
+      <button class="btn-submit" id="submit-btn" onclick="submitSentence()">[ Skicka ]</button>
+    </div>
+
+    <div class="thanks" id="thanks-view">
+      <div class="check">✓</div>
+      <h2>Tack!</h2>
+      <p>Ditt svar har lagts till i ordmolnet.</p>
+    </div>
+  </aside>
+
+  <div class="cloud-area">
+    <div class="empty" id="empty-state">
+      <div class="icon">::</div>
+      <p>Ordmolnet visas här när elever skickar in sina svar.</p>
+    </div>
+    <canvas id="cloud-canvas"></canvas>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+<script>
+  // ── Matrix rain ──
+  (function () {
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+    const CHARS = 'アカサタナハマヤラワイキシチニヒミリウクスツヌフムユルンエケセテネヘメオコソトノホモヨロ01001101';
+    const SIZE = 13;
+    let drops = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drops = Array.from({ length: Math.floor(canvas.width / SIZE) }, () => Math.random() * -80);
+    }
+
+    function draw() {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = SIZE + 'px monospace';
+      for (let i = 0; i < drops.length; i++) {
+        ctx.fillStyle = i % 5 === 0 ? '#ffffff' : '#00ff41';
+        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], i * SIZE, drops[i] * SIZE);
+        if (drops[i] * SIZE > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    setInterval(draw, 40);
+  })();
+
+  // ── Theme ──
+  const COLORS = {
+    matrix: ['#00ff41','#00e639','#39ff73','#00cc33','#66ff99','#00b32d','#80ffb3','#33ff66','#00ff80','#4dff88'],
+    light:  ['#2563eb','#7c3aed','#db2777','#0891b2','#d97706','#16a34a','#9333ea','#dc2626','#0369a1','#b45309'],
+  };
+
+  let currentTheme = localStorage.getItem('theme') || 'matrix';
+
+  function setTheme(theme) {
+    currentTheme = theme;
+    localStorage.setItem('theme', theme);
+    document.body.classList.toggle('light-theme', theme === 'light');
+    document.getElementById('btn-matrix').classList.toggle('active', theme === 'matrix');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    scheduleDraw();
+  }
+
+  setTheme(currentTheme);
+
+  // ── Word cloud ──
+  const socket = io();
+  let wordData = {};
+  let subCount = 0;
+  let drawTimeout = null;
+
+  function updateBadge() {
+    document.getElementById('count-badge').textContent = `${subCount} svar`;
+  }
+
+  function drawCloud() {
+    const entries = Object.entries(wordData);
+    const canvas = document.getElementById('cloud-canvas');
+    const empty = document.getElementById('empty-state');
+
+    if (entries.length === 0) {
+      canvas.style.display = 'none';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    canvas.style.display = 'block';
+
+    const area = document.querySelector('.cloud-area');
+    const w = area.clientWidth - 32;
+    const h = area.clientHeight - 32;
+    canvas.width = w;
+    canvas.height = h;
+
+    const palette = COLORS[currentTheme];
+    const maxCount = Math.max(...entries.map(([, v]) => v));
+    const list = entries
+      .sort(([, a], [, b]) => b - a)
+      .map(([word, count], i) => [
+        word,
+        Math.round(12 + (count / maxCount) * (Math.min(w, h) * 0.05)),
+        palette[i % palette.length],
+      ]);
+
+    WordCloud(canvas, {
+      list,
+      gridSize: Math.round(8 * w / 1024),
+      weightFactor: 1,
+      fontFamily: "'Courier New', Courier, monospace",
+      color: (word) => {
+        const idx = list.findIndex(([w]) => w === word);
+        return palette[idx % palette.length];
+      },
+      rotateRatio: 0.3,
+      rotationSteps: 2,
+      backgroundColor: 'transparent',
+      shrinkToFit: true,
+    });
+  }
+
+  function scheduleDraw() {
+    clearTimeout(drawTimeout);
+    drawTimeout = setTimeout(drawCloud, 300);
+  }
+
+  socket.on('update', ({ wordCounts, submissionCount }) => {
+    wordData = wordCounts;
+    subCount = submissionCount;
+    updateBadge();
+    scheduleDraw();
+  });
+
+  async function submitSentence() {
+    const sentence = document.getElementById('sentence').value.trim();
+    const btn = document.getElementById('submit-btn');
+    const errorMsg = document.getElementById('error-msg');
+
+    errorMsg.style.display = 'none';
+
+    if (!sentence) {
+      errorMsg.textContent = 'Skriv något innan du skickar.';
+      errorMsg.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '[ Skickar... ]';
+
+    try {
+      const res = await fetch('/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sentence }),
+      });
+
+      if (res.ok) {
+        document.getElementById('form-view').style.display = 'none';
+        document.getElementById('thanks-view').style.display = 'flex';
+      } else {
+        const data = await res.json();
+        errorMsg.textContent = data.error || 'Något gick fel.';
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '[ Skicka ]';
+      }
+    } catch {
+      errorMsg.textContent = 'Kunde inte nå servern.';
+      errorMsg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '[ Skicka ]';
+    }
+  }
+
+  document.getElementById('sentence').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitSentence();
+    }
+  });
+
+  async function init() {
+    const res = await fetch('/words');
+    const data = await res.json();
+    wordData = data.wordCounts;
+    subCount = data.submissionCount;
+    updateBadge();
+    drawCloud();
+  }
+
+  window.addEventListener('resize', scheduleDraw);
+  init();
+</script>
+</body>
+</html>

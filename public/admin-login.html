@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exit Protocol — Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      font-family: 'Courier New', Courier, monospace;
+      color: #00ff41;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    #rain {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: rgba(0, 5, 0, 0.92);
+      border: 1px solid rgba(0, 255, 65, 0.4);
+      box-shadow: 0 0 30px rgba(0, 255, 65, 0.15), inset 0 0 30px rgba(0, 0, 0, 0.5);
+      border-radius: 4px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo pre {
+      color: #00ff41;
+      font-size: 0.55rem;
+      line-height: 1.2;
+      text-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-align: center;
+      color: #00ff41;
+      text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+      margin-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+
+    .subtitle {
+      color: rgba(0, 255, 65, 0.4);
+      font-size: 0.75rem;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    label {
+      display: block;
+      color: rgba(0, 255, 65, 0.6);
+      font-size: 0.75rem;
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 255, 65, 0.3);
+      background: rgba(0, 20, 0, 0.5);
+      color: #00ff41;
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 16px;
+    }
+
+    input::placeholder { color: rgba(0, 255, 65, 0.2); }
+
+    input:focus {
+      border-color: #00ff41;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid #00ff41;
+      background: rgba(0, 255, 65, 0.08);
+      color: #00ff41;
+      font-size: 0.88rem;
+      font-weight: bold;
+      font-family: inherit;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: rgba(0, 255, 65, 0.18);
+      box-shadow: 0 0 14px rgba(0, 255, 65, 0.4);
+    }
+
+    .btn:disabled { opacity: 0.4; cursor: default; }
+
+    .error {
+      color: #ff4141;
+      font-size: 0.78rem;
+      text-align: center;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .back {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: rgba(0, 255, 65, 0.3);
+      font-size: 0.75rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .back:hover { color: rgba(0, 255, 65, 0.7); }
+  </style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+
+<div class="card">
+  <div class="logo">
+    <pre>
+ ███████╗██╗  ██╗██╗████████╗    ██████╗ ██████╗  ██████╗ ████████╗ ██████╗  ██████╗ ██████╗ ██╗
+ ██╔════╝╚██╗██╔╝██║╚══██╔══╝    ██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██╔═══██╗██╔════╝██╔═══██╗██║
+ █████╗   ╚███╔╝ ██║   ██║       ██████╔╝██████╔╝██║   ██║   ██║   ██║   ██║██║     ██║   ██║██║
+ ██╔══╝   ██╔██╗ ██║   ██║       ██╔═══╝ ██╔══██╗██║   ██║   ██║   ██║   ██║██║     ██║   ██║██║
+ ███████╗██╔╝ ██╗██║   ██║       ██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝╚██████╗╚██████╔╝███████╗
+ ╚══════╝╚═╝  ╚═╝╚═╝   ╚═╝       ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝</pre>
+  </div>
+  <h1>:: ADMINÅTKOMST ::</h1>
+  <p class="subtitle">Ange dina uppgifter för att fortsätta</p>
+
+  <form onsubmit="login(event)">
+    <label for="username">Användarnamn</label>
+    <input id="username" type="text" placeholder="admin" autocomplete="username" required />
+
+    <label for="password">Lösenord</label>
+    <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+
+    <button class="btn" id="btn" type="submit">[ Logga in ]</button>
+  </form>
+
+  <p class="error" id="error-msg"></p>
+  <a class="back" href="/">← Tillbaka till elevsidan</a>
+</div>
+
+<script>
+  (function () {
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+    const CHARS = 'アカサタナハマヤラワイキシチニヒミリウクスツヌフムユルンエケセテネヘメオコソトノホモヨロ01001101';
+    const SIZE = 13;
+    let drops = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      drops = Array.from({ length: Math.floor(canvas.width / SIZE) }, () => Math.random() * -80);
+    }
+
+    function draw() {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = SIZE + 'px monospace';
+      for (let i = 0; i < drops.length; i++) {
+        ctx.fillStyle = i % 5 === 0 ? '#ffffff' : '#00ff41';
+        ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], i * SIZE, drops[i] * SIZE);
+        if (drops[i] * SIZE > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    setInterval(draw, 40);
+  })();
+
+  async function login(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn');
+    const errorMsg = document.getElementById('error-msg');
+    errorMsg.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = '[ Autentiserar... ]';
+
+    try {
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.href = '/admin/dashboard';
+      } else {
+        errorMsg.textContent = '> FEL: ' + (data.error || 'Inloggning misslyckades.');
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '[ Logga in ]';
+      }
+    } catch {
+      errorMsg.textContent = '> FEL: Kunde inte nå servern.';
+      errorMsg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '[ Logga in ]';
+    }
+  }
+</script>
+</body>
+</html>
